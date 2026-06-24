@@ -23,4 +23,29 @@
 ### Done:
     - All tasks were completed successfully.
 
-    
+## Session 3: 2026-06-20
+### Duration: 4 Hours
+### Tasks:
+    - Change the `Vector` to no use the new keyword and instead use `malloc` and `free` for memory management.
+    - Fixed the old erros in the `Vector` class implementation.
+### Problem Encountered:
+    - Error in the `Vector` class implementation due to incorrect memory allocation. Resolved by ensuring proper use of `malloc` and `free` for dynamic memory management.
+
+### Done:
+    - Only the Implementation of `Vector` without new and delete was completed successfully. The other tasks were not completed due to the errors encountered in the `Vector` class implementation.
+
+
+## Session 4: 2026-06-23
+### Duration: 6 Hours
+### Tasks:
+    - Fix the errors that is going on in the Vector class implementation.
+    - Improve the logic of the `Vector` class to handle dynamic resizing and memory management more efficiently.
+    - Improve the `Vector` class to handle edge cases such as accessing elements out of bounds and resizing the vector when it reaches its capacity.
+    - Improved the archietecture of the Proposal to include from a basic to a final design of the data structure library.
+
+### Problem Encountered:
+    - Non-trival datatypes are not working with the `Vector` class. Tried to resolve the issue by mannualy constructing the objects in the `Vector` class using placement new and calling the destructor explicitly. However, this approach is not working as expected and is causing memory leaks and undefined behavior.
+
+### Done:
+    - The `Vector` class implementation was improved to handle dynamic resizing and memory management more efficiently.
+    - The proposal was improved also.

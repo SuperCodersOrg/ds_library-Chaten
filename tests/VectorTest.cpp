@@ -1,300 +1,181 @@
 #include <iostream>
-#include <exception>
+#include <string>
+#include <cassert>
+#include <stdexcept>
 #include "Vector.h"
 
-using namespace std;
+struct CustomType {
+    int id;
+    std::string name;
 
-int testsPassed = 0;
-int testsFailed = 0;
+    CustomType() : id(0), name("") {}
+    CustomType(int i, std::string n) : id(i), name(std::move(n)) {}
 
-void pass(const string& testName){
-    cout << "[PASS] " << testName << endl;
-    testsPassed++;
-}
+    bool operator==(const CustomType& other) const {
+        return id == other.id && name == other.name;
+    }
+};
 
-void fail(const string& testName){
-    cout << "[FAIL] " << testName << endl;
-    testsFailed++;
-}
-
-void printSummary(){
-    cout << "\n=====================================\n";
-    cout << "Testing Summary\n";
-    cout << "=====================================\n";
-    cout << "Passed : " << testsPassed << endl;
-    cout << "Failed : " << testsFailed << endl;
-    cout << "Total  : " << testsPassed + testsFailed << endl;
-    cout << "=====================================\n";
-}
-
-void testDefaultConstructor(){
+void testPrimitiveType() {
     Vector<int> v;
 
-    if(v.size()==0 &&
-       v.capacity()==1 &&
-       v.empty())
-        pass("Default Constructor");
-    else
-        fail("Default Constructor");
-}
-
-void testInitializerList(){
-    Vector<int> v={1,2,3};
-
-    if(v.size()==3 &&
-       v[0]==1 &&
-       v[1]==2 &&
-       v[2]==3)
-        pass("Initializer List");
-    else
-        fail("Initializer List");
-}
-
-void testCopyConstructor(){
-    Vector<int> a={10,20,30};
-
-    Vector<int> b(a);
-
-    if(b.size()==3 &&
-       b[0]==10 &&
-       b[1]==20 &&
-       b[2]==30)
-        pass("Copy Constructor");
-    else
-        fail("Copy Constructor");
-}
-
-void testAssignmentOperator(){
-    Vector<int> a={5,6,7};
-
-    Vector<int> b;
-
-    b=a;
-
-    if(b.size()==3 &&
-       b[0]==5 &&
-       b[1]==6 &&
-       b[2]==7)
-        pass("Assignment Operator");
-    else
-        fail("Assignment Operator");
-}
-
-
-void testPushBackOne(){
-    Vector<int> v;
+    assert(v.empty());
+    assert(v.size() == 0);
 
     v.push_back(10);
+    v.push_back(20);
+    v.push_back(30);
 
-    if(v.size()==1 &&
-       v[0]==10)
-        pass("Push Back One Element");
-    else
-        fail("Push Back One Element");
-}
-
-void testPushBackMultiple(){
-    Vector<int> v;
-
-    for(int i=0;i<10;i++)
-        v.push_back(i);
-
-    bool ok=true;
-
-    for(int i=0;i<10;i++){
-        if(v[i]!=i)
-            ok=false;
-    }
-
-    if(ok)
-        pass("Push Back Multiple");
-    else
-        fail("Push Back Multiple");
-}
-
-
-void testPopBack(){
-    Vector<int> v={1,2,3};
+    assert(v.size() == 3);
+    assert(v.front() == 10);
+    assert(v.back() == 30);
+    assert(v[1] == 20);
+    assert(v.at(2) == 30);
 
     v.pop_back();
+    assert(v.size() == 2);
+    assert(v.back() == 20);
 
-    if(v.size()==2 &&
-       v.back()==2)
-        pass("Pop Back");
-    else
-        fail("Pop Back");
-}
+    v.insert(0, 5);
+    assert(v.front() == 5);
+    assert(v.size() == 3);
 
-void testPopBackEmpty(){
-    Vector<int> v;
-
-    try{
-        v.pop_back();
-        fail("Pop Empty Vector");
-    }
-    catch(...){
-        pass("Pop Empty Vector");
-    }
-}
-
-void testInsertBeginning(){
-    Vector<int> v={2,3};
-
-    v.insert(0,1);
-
-    if(v[0]==1 &&
-       v[1]==2 &&
-       v[2]==3)
-        pass("Insert Beginning");
-    else
-        fail("Insert Beginning");
-}
-
-void testInsertMiddle(){
-    Vector<int> v={1,3};
-
-    v.insert(1,2);
-
-    if(v[0]==1 &&
-       v[1]==2 &&
-       v[2]==3)
-        pass("Insert Middle");
-    else
-        fail("Insert Middle");
-}
-
-void testInsertEnd(){
-    Vector<int> v={1,2};
-
-    v.insert(2,3);
-
-    if(v.back()==3)
-        pass("Insert End");
-    else
-        fail("Insert End");
-}
-
-
-void testRemoveBeginning(){
-    Vector<int> v={1,2,3};
-
-    v.remove(0);
-
-    if(v[0]==2 &&
-       v.size()==2)
-        pass("Remove Beginning");
-    else
-        fail("Remove Beginning");
-}
-
-void testRemoveMiddle(){
-    Vector<int> v={1,2,3};
+    v.insert(2, 15);
+    assert(v[2] == 15);
 
     v.remove(1);
+    assert(v[1] == 15);
 
-    if(v[1]==3)
-        pass("Remove Middle");
-    else
-        fail("Remove Middle");
+    v.clear();
+    assert(v.empty());
+    assert(v.size() == 0);
 }
 
-void testRemoveEnd(){
-    Vector<int> v={1,2,3};
+void testComplexType() {
+    Vector<std::string> v = {"Apple", "Banana", "Cherry"};
 
-    v.remove(2);
+    assert(v.size() == 3);
+    assert(v.front() == "Apple");
+    assert(v.back() == "Cherry");
 
-    if(v.back()==2)
-        pass("Remove End");
-    else
-        fail("Remove End");
+    v.push_back("Date");
+    assert(v.size() == 4);
+    assert(v.back() == "Date");
+
+    Vector<std::string> vCopy = v;
+    assert(vCopy.size() == 4);
+    assert(vCopy[1] == "Banana");
+
+    vCopy[0] = "Apricot";
+    assert(v[0] == "Apple");
+    assert(vCopy[0] == "Apricot");
+
+    Vector<std::string> vAssign;
+    vAssign = v;
+    assert(vAssign.size() == 4);
+    assert(vAssign[2] == "Cherry");
+
+    vAssign.pop_back();
+    assert(vAssign.size() == 3);
+    assert(vAssign.contains("Banana"));
+    assert(!vAssign.contains("Date"));
 }
 
+void testCustomType() {
+    Vector<CustomType> v;
 
-void testFront(){
-    Vector<int> v={5,6,7};
+    v.push_back(CustomType(1, "Alice"));
+    v.push_back(CustomType(2, "Bob"));
 
-    if(v.front()==5)
-        pass("Front");
-    else
-        fail("Front");
+    assert(v.size() == 2);
+    assert(v[0].name == "Alice");
+
+    v.insert(1, CustomType(3, "Charlie"));
+    assert(v.size() == 3);
+    assert(v[1].name == "Charlie");
+
+    assert(v.contains(CustomType(2, "Bob")));
+    assert(v.find(CustomType(1, "Alice")) == 0);
+
+    v.remove(0);
+    assert(v[0].name == "Charlie");
+
+    v.clear();
+    assert(v.empty());
 }
 
-void testBack(){
-    Vector<int> v={5,6,7};
-
-    if(v.back()==7)
-        pass("Back");
-    else
-        fail("Back");
-}
-
-void testAt(){
-    Vector<int> v={5,6,7};
-
-    if(v.at(1)==6)
-        pass("At");
-    else
-        fail("At");
-}
-
-void testEmpty(){
+void testCapacityAndMemory() {
     Vector<int> v;
+    size_t initialCap = v.capacity();
 
-    if(v.empty())
-        pass("Empty");
-    else
-        fail("Empty");
+    v.reserve(100);
+    assert(v.capacity() >= 100);
+
+    for(int i = 0; i < 50; ++i) {
+        v.push_back(i);
+    }
+
+    v.shrink_to_fit();
+    assert(v.capacity() == 50);
+
+    v.reserve(10);
+    assert(v.capacity() == 50);
 }
 
-void testSize(){
-    Vector<int> v={1,2,3};
-
-    if(v.size()==3)
-        pass("Size");
-    else
-        fail("Size");
-}
-
-void testCapacity(){
+void testExceptions() {
     Vector<int> v;
+    bool caught;
 
-    if(v.capacity()==1)
-        pass("Capacity");
-    else
-        fail("Capacity");
+    caught = false;
+    try { v.pop_back(); }
+    catch(const std::out_of_range&) { caught = true; }
+    assert(caught);
+
+    caught = false;
+    try { v.front(); }
+    catch(const std::out_of_range&) { caught = true; }
+    assert(caught);
+
+    caught = false;
+    try { v.back(); }
+    catch(const std::out_of_range&) { caught = true; }
+    assert(caught);
+
+    caught = false;
+    try { v.at(0); }
+    catch(const std::out_of_range&) { caught = true; }
+    assert(caught);
+
+    caught = false;
+    try { v.insert(1, 10); }
+    catch(const std::out_of_range&) { caught = true; }
+    assert(caught);
+
+    caught = false;
+    try { v.remove(0); }
+    catch(const std::out_of_range&) { caught = true; }
+    assert(caught);
+
+    v.push_back(100);
+
+    caught = false;
+    try { v.at(1); }
+    catch(const std::out_of_range&) { caught = true; }
+    assert(caught);
+
+    caught = false;
+    try { v.remove(1); }
+    catch(const std::out_of_range&) { caught = true; }
+    assert(caught);
 }
 
-int main(){
-    cout<<"========== VECTOR TESTS ==========\n\n";
+int main() {
+    testPrimitiveType();
+    testComplexType();
+    testCustomType();
+    testCapacityAndMemory();
+    testExceptions();
 
-    testDefaultConstructor();
-    testInitializerList();
-    testCopyConstructor();
-    testAssignmentOperator();
-
-    testPushBackOne();
-    testPushBackMultiple();
-
-    testPopBack();
-    testPopBackEmpty();
-
-    testInsertBeginning();
-    testInsertMiddle();
-    testInsertEnd();
-
-    testRemoveBeginning();
-    testRemoveMiddle();
-    testRemoveEnd();
-
-    testFront();
-    testBack();
-    testAt();
-
-    testEmpty();
-    testSize();
-    testCapacity();
-
-    printSummary();
-
+    std::cout << "All comprehensive tests passed successfully!\n";
     return 0;
 }

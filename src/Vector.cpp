@@ -1,42 +1,130 @@
-#include <iostream>
 #include <stdexcept>
 #include <initializer_list>
+#include <new>
 #include "Vector.h"
+#include <type_traits>
+#include <cstring>
+#include <utility>
 
 template<typename T>
 Vector<T>::Vector(){
     currentSize = 0;
     currentCapacity = 1;
-    data = new T[currentCapacity];
+    data = static_cast<T*>(malloc(currentCapacity * sizeof(T)));
+
+    if(data == nullptr){
+        throw std::bad_alloc();
+    }
 }
 
 template<typename T>
-Vector<T>::~Vector(){
-    delete[] data;
+Vector<T>::~Vector() noexcept {
+    if(data != nullptr) {
+        if constexpr (!std::is_trivially_destructible<T>::value) {
+            for(size_t i=0; i<currentSize; ++i){
+            data[i].~T();
+            }
+        }
+        free(data);
+        data = nullptr;
+        currentSize = 0;
+        currentCapacity = 0;
+    }
 }
 
 template<typename T>
 Vector<T>::Vector(const Vector& other){
     currentSize = other.currentSize;
-    currentCapacity = other.currentCapacity;
-    data = new T[currentCapacity];
+    currentCapacity = currentSize > 0 ? currentSize : 1;
 
-    for(size_t i=0; i<currentSize; ++i){
-        data[i] = other.data[i];
+    data = static_cast<T*>(malloc(currentCapacity * sizeof(T)));
+
+    if(data == nullptr) {
+        throw std::bad_alloc();
+    }
+
+    if constexpr (std::is_trivially_copyable<T>::value){
+        std::memcpy(data, other.data, currentSize*sizeof(T));
+    } else {
+        size_t constructedCount = 0;
+        try {
+            for(size_t i=0; i<currentSize; ++i){
+                new(&data[i]) T(other.data[i]);
+                constructedCount++;
+            }
+        } catch (...) {
+            for(size_t i=0; i<constructedCount; i++){
+                data[i].~T();
+            }
+            free(data);
+
+            throw;
+        }
     }
 }
 
 template<typename T>
 Vector<T>& Vector<T>::operator=(const Vector& other){
-    if(this != &other){
-        delete []data;
+    if(this!=&other){
+        if(currentCapacity >= other.currentSize){
+            if constexpr (!std::is_trivially_destructible<T>::value) {
+                for(size_t i=0; i<currentSize; ++i){
+                    data[i].~T();
+                }
+            }
 
-        currentSize = other.currentSize;
-        currentCapacity = other.currentCapacity;
-        data = new T[currentCapacity];
+            currentSize = other.currentSize;
+            if constexpr (std::is_trivially_copyable<T>::value) {
+                std::memcpy(data, other.data, currentSize * sizeof(T));
+            } else {
+                size_t constructedCount = 0;
+                try {
+                    for(size_t i=0; i<currentSize; ++i){
+                        new(&data[i]) T(other.data[i]);
+                        constructedCount++;
+                    }
+                } catch (...) {
+                    for(size_t i=0; i<constructedCount; ++i) {
+                        data[i].~T();
+                    }
+                    currentSize = 0;
+                    throw;
+                }
+            }
+         } else {
+            size_t newCapacity = other.currentSize > 0 ? other.currentSize : 1;
+            T* newData = static_cast<T*>(malloc(newCapacity * sizeof(T)));
+            if(newData == nullptr) {
+                throw std::bad_alloc();
+            }
 
-        for(size_t i=0; i<currentSize; ++i){
-            data[i] = other.data[i];
+            if constexpr (std::is_trivially_copyable<T>::value){
+                std::memcpy(newData, other.data, other.currentSize * sizeof(T));
+            } else {
+                size_t constructedCount = 0;
+                try {
+                    for(size_t i=0; i<other.currentSize; i++){
+                        new(&newData[i]) T(other.data[i]);
+                        constructedCount++;
+                    }
+                } catch (...) {
+                    for(size_t i=0; i<constructedCount; ++i) {
+                        newData[i].~T();
+                    }
+                    free(newData);
+                    throw;
+                }
+            }
+            if constexpr (!std::is_trivially_destructible<T>::value) {
+                for(size_t i=0; i<currentSize; ++i) {
+                    data[i].~T();
+                }
+            }
+            free(data);
+
+            data = newData;
+            currentSize = other.currentSize;
+            currentCapacity = newCapacity;
         }
     }
     return *this;
@@ -46,32 +134,72 @@ template<typename T>
 Vector<T>::Vector(std::initializer_list<T> initList){
     currentSize = initList.size();
     currentCapacity = currentSize > 0 ? currentSize : 1;
-    data = new T[currentCapacity];
+    data = static_cast<T*>(malloc(currentCapacity * sizeof(T)));
 
-    size_t index = 0;
-    for(const T& value: initList) {
-        data[index++] = value;
+    if(data == nullptr) {
+        throw std::bad_alloc();
+    }
+
+    if constexpr (std::is_trivially_copyable<T>::value) {
+        std::memcpy(data, initList.begin(), currentSize * sizeof(T));
+    } else {
+        size_t constructedCount = 0;
+        try {
+            for(const T& value: initList) {
+                new(&data[constructedCount]) T(value);
+                constructedCount++;
+            }
+        } catch (...) {
+            for(size_t i=0; i<constructedCount; i++) {
+                data[i].~T();
+            }
+            free(data);
+            throw;
+        }
     }
 }
 
 template<typename T>
 void Vector<T>::resize(){
-    currentCapacity *=2;
-    T* newData = new T[currentCapacity];
-    for(size_t i=0; i<currentSize; ++i){
-        newData[i] = data[i];
+    currentCapacity *= 2;
+    T* newData = static_cast<T*>(malloc(currentCapacity * sizeof(T)));
+
+    if(newData == nullptr) {
+        throw std::bad_alloc();
     }
-    delete[] data;
+    if constexpr (std::is_trivially_copyable<T>::value){
+        if(currentSize > 0) {
+            std::memcpy(newData, data, currentSize * sizeof(T));
+        }
+    } else {
+        size_t constructedCount = 0;
+        try {
+            for(size_t i=0; i<currentSize; i++){
+                new(&newData[i]) T(std::move_if_noexcept(data[i]));
+                constructedCount++;
+            }
+        } catch (...) {
+            for(size_t i=0; i<constructedCount; i++){
+                newData[i].~T();
+            }
+            free(newData);
+            throw;
+        }
+        for(size_t i=0; i<currentSize; i++){
+            data[i].~T();
+        }
+    }
+    free(data);
     data = newData;
 }
 
 template<typename T>
 void Vector<T>::push_back(const T& value) {
     if(currentSize >= currentCapacity) {
-        // std::cout << "Array full, resizing..." << std::endl;
         resize();
     }
-    data[currentSize++] = value;
+    new(&data[currentSize]) T(value);
+    ++currentSize;
 }
 
 template<typename T>
@@ -79,15 +207,9 @@ void Vector<T>::pop_back(){
     if(currentSize == 0){
         throw std::out_of_range("Vector is empty");
     }
-    // if(currentSize <= currentCapacity / 4 && currentCapacity > 1) {
-    //     currentCapacity /= 2;
-    //     T* newData = new T[currentCapacity];
-    //     for(size_t i=0; i<currentSize-1; ++i){
-    //         newData[i] = data[i];
-    //     }
-    //     delete[] data;
-    //     data = newData;
-    // }
+    if constexpr (!std::is_trivially_destructible<T>::value) {
+        data[currentSize-1].~T();
+    }
     --currentSize;
 }
 
@@ -99,10 +221,16 @@ void Vector<T>::insert(size_t index, const T& value){
     if(currentSize >= currentCapacity) {
         resize();
     }
-    for(size_t i=currentSize; i>index; --i){
-        data[i] = data[i-1];
+
+    if(index == currentSize) {
+        new(&data[currentSize]) T(value);
+    } else {
+        new(&data[currentSize]) T(std::move(data[currentSize-1]));
+        for(size_t i=currentSize-1; i>index; --i) {
+            data[i] = std::move(data[i-1]);
+        }
+        data[index] = value;
     }
-    data[index] = value;
     ++currentSize;
 }
 
@@ -112,41 +240,102 @@ void Vector<T>::remove(size_t index){
         throw std::out_of_range("Index out of range");
     }
     for(size_t i=index; i<currentSize-1; ++i){
-        data[i] = data[i+1];
+        data[i] = std::move(data[i+1]);
+    }
+    if constexpr (!std::is_trivially_destructible<T>::value) {
+        data[currentSize - 1].~T();
     }
     --currentSize;
 }
 
 template<typename T>
 void Vector<T>::clear(){
-    currentSize=  0;
+    if constexpr(!std::is_trivially_destructible<T>::value){
+        for(size_t i=0; i<currentSize; i++){
+            data[i].~T();
+        }
+    }
+    currentSize = 0;
 }
 
 template<typename T>
 void Vector<T>::reserve(size_t newCapacity){
-    if(newCapacity > currentCapacity){
-        currentCapacity = newCapacity;
-        T* newData = new T[currentCapacity];
-        for(size_t i=0; i<currentSize; ++i){
-            newData[i] =data[i];
-        }
-        delete[] data;
-        data = newData;
-    } else if(newCapacity < currentSize){
-        throw std::invalid_argument("New capacity cannot be less than current size");
+    if(newCapacity <= currentCapacity) return;
+    T* newData = static_cast<T*>(malloc(newCapacity * sizeof(T)));
+
+    if(newData == nullptr) {
+        throw std::bad_alloc();
     }
+
+    if constexpr (std::is_trivially_copyable<T>::value) {
+        if(currentSize > 0) {
+            std::memcpy(newData, data, currentSize * sizeof(T));
+        }
+    } else {
+        size_t constructedCount = 0;
+        try {
+            for(size_t i=0; i<currentSize; ++i){
+                new(&newData[i]) T(std::move_if_noexcept(data[i]));
+                constructedCount++;
+            }
+        } catch (...) {
+            for(size_t i=0; i<constructedCount; i++){
+                newData[i].~T();
+            }
+            free(newData);
+            throw;
+        }
+        for(size_t i=0; i<currentSize; i++){
+            data[i].~T();
+        }
+    }
+    free(data);
+    data = newData;
+    currentCapacity = newCapacity;
 }
 
 template<typename T>
 void Vector<T>::shrink_to_fit(){
     if(currentCapacity > currentSize){
-        currentCapacity = currentSize;
-        T* newData = new T[currentCapacity];
-        for(size_t i=0; i<currentSize; ++i){
-            newData[i] = data[i];
+        size_t newCapacity = currentSize > 0 ? currentSize : 1;
+
+        if (currentCapacity <= newCapacity) {
+            return;
         }
-        delete[] data;
+
+        T* newData = static_cast<T*>(malloc(newCapacity * sizeof(T)));
+
+        if (newData == nullptr) {
+            throw std::bad_alloc();
+        }
+
+        if constexpr (std::is_trivially_copyable<T>::value) {
+            if (currentSize > 0) {
+                std::memcpy(newData, data, currentSize * sizeof(T));
+            }
+        }
+        else {
+            size_t constructedCount = 0;
+            try {
+                for(size_t i = 0; i < currentSize; ++i){
+                    new(&newData[i]) T(std::move_if_noexcept(data[i]));
+                    constructedCount++;
+                }
+            } catch (...) {
+                for(size_t i = 0; i < constructedCount; ++i) {
+                    newData[i].~T();
+                }
+                free(newData);
+                throw;
+            }
+            for(size_t i = 0; i < currentSize; ++i){
+                data[i].~T();
+            }
+        }
+
+        free(data);
         data = newData;
+        currentCapacity = newCapacity;
     }
 }
 
@@ -237,4 +426,3 @@ template<typename T>
 bool Vector<T>::contains(const T& value) const {
     return find(value) != currentSize;
 }
-

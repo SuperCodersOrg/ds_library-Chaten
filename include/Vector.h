@@ -18,7 +18,7 @@ public:
     Vector();
     Vector(const Vector& other);
     Vector& operator=(const Vector& other);
-    ~Vector();
+    ~Vector() noexcept;
 
     Vector(std::initializer_list<T> initList);
 
