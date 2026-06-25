@@ -49,3 +49,16 @@
 ### Done:
     - The `Vector` class implementation was improved to handle dynamic resizing and memory management more efficiently.
     - The proposal was improved also.
+
+## Session 5: 2026-06-24
+### Duration: 5 Hours
+### Tasks:
+    - Implemented the `LinkedList` class in `include/LinkedList.h`.
+    - Added member functions such as `push_front`, `push_back`, `pop_front`, `pop_back`, `front`, `back`, `at`, `empty`, and `size`.
+    - Implemented the constructor, copy constructor, assignment operator, and destructor for the `LinkedList` class.
+
+### Problem Encountered:
+    - No problems were encountered during this session.
+
+### Done:
+    - All tasks were completed successfully.
