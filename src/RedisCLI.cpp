@@ -50,6 +50,33 @@ void RedisCLI::run() {
                 }
             }
         }
+        else if (cmd == "DEL") {
+            ss >> key;
+
+            if (key.empty()) {
+                std::cout << "(error) ERR wrong number of arguments for 'del' command\n";
+            } else {
+                try {
+                    redisData.remove(key);
+                    std::cout << "(integer) 1\n";
+                } catch (const std::out_of_range&) {
+                    std::cout << "(integer) 0\n";
+                }
+            }
+        }
+        else if (cmd == "EXISTS") {
+            ss >> key;
+
+            if (key.empty()) {
+                std::cout << "(error) ERR wrong number of arguments for 'exists' command\n";
+            } else {
+                if (redisData.contains(key)) {
+                    std::cout << "(integer) 1\n";
+                } else {
+                    std::cout << "(integer) 0\n";
+                }
+            }
+        }
         else {
             std::cout << "(error) ERR unknown command '" << cmd << "'\n";
         }
