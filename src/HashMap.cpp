@@ -14,15 +14,16 @@ HashMap<K, V>::HashMap(const HashMap& other) : bucketCount(other.bucketCount), e
 }
 
 template<typename K, typename V>
-HashMap<K, V>& HashMap<K, V>::operator=(const HashMap& other){
+HashMap<K, V>& HashMap<K, V>::operator=(const HashMap& other) {
     if(this != &other) {
+        Node** newBuckets = new Node*[other.bucketCount]();
+
         clear();
         delete[] buckets;
 
         bucketCount = other.bucketCount;
         elementCount = 0;
-        buckets = new Node*[bucketCount]();
-
+        buckets = newBuckets;
         copyFrom(other);
     }
     return *this;
